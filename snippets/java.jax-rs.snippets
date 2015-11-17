@@ -1,0 +1,189 @@
+# Variables
+# $2 The java class name in CamelCase
+# $3 RS Bean
+# $1 a single entity in lowercase
+# $4 a list of entities in lowercase
+snippet jaxrs
+	import io.swagger.annotations.Api;
+	import io.swagger.annotations.ApiOperation;
+	import io.swagger.annotations.ApiResponse;
+	import io.swagger.annotations.ApiResponses;
+
+	import java.util.ArrayList;
+	import java.util.Date;
+
+	import javax.inject.Inject;
+	import javax.ws.rs.Consumes;
+	import javax.ws.rs.DELETE;
+	import javax.ws.rs.GET;
+	import javax.ws.rs.InternalServerErrorException;
+	import javax.ws.rs.NotAcceptableException;
+	import javax.ws.rs.NotFoundException;
+	import javax.ws.rs.POST;
+	import javax.ws.rs.PUT;
+	import javax.ws.rs.Path;
+	import javax.ws.rs.PathParam;
+	import javax.ws.rs.Produces;
+	import javax.ws.rs.core.Context;
+	import javax.ws.rs.core.EntityTag;
+	import javax.ws.rs.core.MediaType;
+	import javax.ws.rs.core.Request;
+	import javax.ws.rs.core.Response;
+	import javax.ws.rs.core.Response.ResponseBuilder;
+	import javax.ws.rs.core.UriInfo;
+
+	import br.org.pti.promotion.context.filters.CacheMaxAge;
+
+	@Path("/${1:entity}")
+	@Api(value = "/$1")
+	public class Service${2:ClassName} {
+
+		@Inject${0}
+		private ${3:Resource} rs;
+
+		@GET
+		@Path("{id}")
+		@Produces(MediaType.APPLICATION_JSON)
+		@CacheMaxAge
+		@ApiOperation(value = "Find $1 by ID", notes = "Returns a $1", response = $2.class)
+		@ApiResponses(value = {
+				@ApiResponse(code = 200, message = "OK"),
+				@ApiResponse(code = 304, message = "Not modified (cache and e-Tag)"),
+				@ApiResponse(code = 404, message = "Not found") })
+		public Response getById(@PathParam("id") Long id, @Context Request request) {
+
+			try {
+				$2 entity = rs.getById(id);
+
+				EntityTag etag = new EntityTag(Integer.toString(entity.hashCode()));
+				ResponseBuilder builder = request.evaluatePreconditions(etag);
+
+				if (builder != null) {
+					return Response.notModified(etag).build();
+				}
+
+				builder = Response.ok().entity(entity);
+				builder.tag(etag);
+
+				return builder.build();
+			} catch (Exception e) {
+				throw new NotFoundException();
+			}
+		}
+
+		@GET
+		@Produces(MediaType.APPLICATION_JSON)
+		@CacheMaxAge
+		@ApiOperation(value = "Get all ${4:entities}", notes = "Returns a list of $4", response = $2.class)
+		@ApiResponses(value = {
+				@ApiResponse(code = 200, message = "OK"),
+				@ApiResponse(code = 204, message = "Any entity"),
+				@ApiResponse(code = 304, message = "Not modified (cache and e-Tag)"),
+				@ApiResponse(code = 404, message = "Not found") })
+		public Response getAll(@Context Request request) {
+
+			try {
+				ArrayList<$2> $4 = (ArrayList<$2>) rs
+					.getAll();
+
+				EntityTag etag = new EntityTag(Integer.toString($4.hashCode()));
+				ResponseBuilder builder = request.evaluatePreconditions(etag);
+
+				if (builder != null) {
+					return Response.notModified(etag).build();
+				}
+
+				if ($4 == null || $4.isEmpty()) {
+					return Response.noContent().build();
+				}
+
+				builder = Response.ok().entity($4);
+				builder.tag(etag);
+
+				return builder.build();
+			} catch (Exception e) {
+				throw new NotFoundException();
+			}
+		}
+
+		@POST
+		@Consumes(MediaType.APPLICATION_JSON)
+		@Produces(MediaType.APPLICATION_JSON)
+		@ApiOperation(value = "Create a $1", notes = "Returns an url for created $1", response = $2.class)
+		@ApiResponses(value = {
+				@ApiResponse(code = 201, message = "Created"),
+				@ApiResponse(code = 406, message = "Something wrong on the server or the request"),
+				@ApiResponse(code = 500, message = "Can't create a $1") })
+		public Response create($2 $1, @Context UriInfo uriInfo) {
+
+			try {
+				$2 entity = rs.create($1);
+
+				if (entity == null) {
+					return Response.serverError().build();
+				}
+
+				return Response.created(uriInfo.getAbsolutePath()).entity(entity).build();
+			} catch (Exception e) {
+				throw new NotAcceptableException(e);
+			}
+		}
+
+		@PUT
+		@Consumes(MediaType.APPLICATION_JSON)
+		@Produces(MediaType.APPLICATION_JSON)
+		@ApiOperation(value = "Update a $1", notes = "Returns the updated $1", response = $2.class)
+		@ApiResponses(value = {
+				@ApiResponse(code = 200, message = "Updated"),
+				@ApiResponse(code = 304, message = "Not modified (cache and e-Tag)"),
+				@ApiResponse(code = 406, message = "Something wrong on the server or the request"),
+				@ApiResponse(code = 500, message = "Can't update that $1") })
+		public Response update($2 $1, @Context Request request) {
+
+			java.util.Date timestamp = new Date();
+
+			EntityTag etag = new EntityTag(Integer.toString($1.hashCode()));
+
+			ResponseBuilder builder = request
+				.evaluatePreconditions(timestamp, etag);
+
+			if (builder != null) {
+				return Response.notModified(etag).build();
+			}
+
+			try {
+
+				$2 entity = rs.update($1);
+
+				if (entity == null) {
+					return Response.serverError().build();
+				}
+
+				builder = Response.ok();
+				builder.entity(entity);
+
+				return builder.build();
+			} catch (Exception e) {
+				throw new NotAcceptableException();
+			}
+		}
+
+		@DELETE
+		@Path("{id}")
+		@Consumes(MediaType.APPLICATION_JSON)
+		@Produces(MediaType.APPLICATION_JSON)
+		@ApiOperation(value = "Delete a $1", notes = "Returns if it works", response = $2.class)
+		@ApiResponses(value = {
+				@ApiResponse(code = 200, message = "Deleted"),
+				@ApiResponse(code = 500, message = "Can't delete that $1") })
+		public Response delete(@PathParam("id") Long id) {
+
+			try {
+				rs.delete(id);
+
+				return Response.ok().build();
+			} catch (Exception e) {
+				throw new InternalServerErrorException();
+			}
+		}
+	}
