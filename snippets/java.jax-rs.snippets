@@ -1,10 +1,10 @@
 # Variables
-# $2 The java class name in CamelCase
+# $3 The java class name in CamelCase
 # $3 RS Bean
 # $1 a single entity in lowercase
 # $4 a list of entities in lowercase
 snippet jaxrs
-	package ${5:package.path};
+	package ${5:java};
 
 	import java.util.ArrayList;
 	import java.util.Date;
@@ -15,6 +15,7 @@ snippet jaxrs
 	import javax.ws.rs.GET;
 	import javax.ws.rs.InternalServerErrorException;
 	import javax.ws.rs.NotAcceptableException;
+	import javax.ws.rs.NotFoundException;
 	import javax.ws.rs.POST;
 	import javax.ws.rs.PUT;
 	import javax.ws.rs.Path;
@@ -42,14 +43,14 @@ snippet jaxrs
 	@Api(value = "/$1")
 	public class ${2:ClassName}Controller {
 
-		@Inject${0}
-		private GenericResourcesLocalHome<${3:Resource}> rs;
+		@Inject
+		private GenericResourcesLocalHome<${3:Model}> rs;
 
 		@GET
 		@Path("{id}")
 		@Produces(MediaType.APPLICATION_JSON)
 		@CacheMaxAge
-		@ApiOperation(value = "Find $1 by ID", notes = "Returns a $1", response = $2.class)
+		@ApiOperation(value = "Find $1 by ID", notes = "Returns a $1", response = $3.class)
 		@ApiResponses(value = {
 				@ApiResponse(code = 200, message = "OK"),
 				@ApiResponse(code = 304, message = "Not modified (cache and e-Tag)"),
@@ -57,7 +58,7 @@ snippet jaxrs
 		public Response getById(@PathParam("id") Long id, @Context Request request) {
 
 			try {
-				$2 entity = rs.getById(id);
+				$3 entity = rs.getById(id);
 
 				EntityTag etag = new EntityTag(Integer.toString(entity.hashCode()));
 				ResponseBuilder builder = request.evaluatePreconditions(etag);
@@ -78,7 +79,7 @@ snippet jaxrs
 		@GET
 		@Produces(MediaType.APPLICATION_JSON)
 		@CacheMaxAge
-		@ApiOperation(value = "Get all ${4:entities}", notes = "Returns a list of $4", response = $2.class)
+		@ApiOperation(value = "Get all ${4:entities}", notes = "Returns a list of $4", response = $3.class)
 		@ApiResponses(value = {
 				@ApiResponse(code = 200, message = "OK"),
 				@ApiResponse(code = 204, message = "Any entity"),
@@ -87,7 +88,7 @@ snippet jaxrs
 		public Response getAll(@Context Request request) {
 
 			try {
-				ArrayList<$2> $4 = (ArrayList<$2>) rs
+				ArrayList<$3> $4 = (ArrayList<$3>) rs
 					.getAll();
 
 				EntityTag etag = new EntityTag(Integer.toString($4.hashCode()));
@@ -113,15 +114,15 @@ snippet jaxrs
 		@POST
 		@Consumes(MediaType.APPLICATION_JSON)
 		@Produces(MediaType.APPLICATION_JSON)
-		@ApiOperation(value = "Create a $1", notes = "Returns an url for created $1", response = $2.class)
+		@ApiOperation(value = "Create a $1", notes = "Returns an url for created $1", response = $3.class)
 		@ApiResponses(value = {
 				@ApiResponse(code = 201, message = "Created"),
 				@ApiResponse(code = 406, message = "Something wrong on the server or the request"),
 				@ApiResponse(code = 500, message = "Can't create a $1") })
-		public Response create($2 $1, @Context UriInfo uriInfo) {
+		public Response create($3 $1, @Context UriInfo uriInfo) {
 
 			try {
-				$2 entity = rs.create($1);
+				$3 entity = rs.create($1);
 
 				if (entity == null) {
 					return Response.serverError().build();
@@ -136,13 +137,13 @@ snippet jaxrs
 		@PUT
 		@Consumes(MediaType.APPLICATION_JSON)
 		@Produces(MediaType.APPLICATION_JSON)
-		@ApiOperation(value = "Update a $1", notes = "Returns the updated $1", response = $2.class)
+		@ApiOperation(value = "Update a $1", notes = "Returns the updated $1", response = $3.class)
 		@ApiResponses(value = {
 				@ApiResponse(code = 200, message = "Updated"),
 				@ApiResponse(code = 304, message = "Not modified (cache and e-Tag)"),
 				@ApiResponse(code = 406, message = "Something wrong on the server or the request"),
 				@ApiResponse(code = 500, message = "Can't update that $1") })
-		public Response update($2 $1, @Context Request request) {
+		public Response update($3 $1, @Context Request request) {
 
 			java.util.Date timestamp = new Date();
 
@@ -157,7 +158,7 @@ snippet jaxrs
 
 			try {
 
-				$2 entity = rs.update($1);
+				$3 entity = rs.update($1);
 
 				if (entity == null) {
 					return Response.serverError().build();
@@ -176,7 +177,7 @@ snippet jaxrs
 		@Path("{id}")
 		@Consumes(MediaType.APPLICATION_JSON)
 		@Produces(MediaType.APPLICATION_JSON)
-		@ApiOperation(value = "Delete a $1", notes = "Returns if it works", response = $2.class)
+		@ApiOperation(value = "Delete a $1", notes = "Returns if it works", response = $3.class)
 		@ApiResponses(value = {
 				@ApiResponse(code = 200, message = "Deleted"),
 				@ApiResponse(code = 500, message = "Can't delete that $1") })
