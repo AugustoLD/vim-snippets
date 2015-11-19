@@ -4,10 +4,7 @@
 # $1 a single entity in lowercase
 # $4 a list of entities in lowercase
 snippet jaxrs
-	import io.swagger.annotations.Api;
-	import io.swagger.annotations.ApiOperation;
-	import io.swagger.annotations.ApiResponse;
-	import io.swagger.annotations.ApiResponses;
+	package ${5:package.path};
 
 	import java.util.ArrayList;
 	import java.util.Date;
@@ -18,7 +15,6 @@ snippet jaxrs
 	import javax.ws.rs.GET;
 	import javax.ws.rs.InternalServerErrorException;
 	import javax.ws.rs.NotAcceptableException;
-	import javax.ws.rs.NotFoundException;
 	import javax.ws.rs.POST;
 	import javax.ws.rs.PUT;
 	import javax.ws.rs.Path;
@@ -33,13 +29,21 @@ snippet jaxrs
 	import javax.ws.rs.core.UriInfo;
 
 	import br.org.pti.promotion.context.filters.CacheMaxAge;
+	import br.org.pti.promotion.persons.interfaces.GenericResourcesLocalHome;
+	import br.org.pti.promotion.persons.model.NaturalPerson;
+	import br.org.pti.promotion.persons.model.University;
+
+	import io.swagger.annotations.Api;
+	import io.swagger.annotations.ApiOperation;
+	import io.swagger.annotations.ApiResponse;
+	import io.swagger.annotations.ApiResponses;
 
 	@Path("/${1:entity}")
 	@Api(value = "/$1")
-	public class Service${2:ClassName} {
+	public class ${2:ClassName}Controller {
 
 		@Inject${0}
-		private ${3:Resource} rs;
+		private GenericResourcesLocalHome<${3:Resource}> rs;
 
 		@GET
 		@Path("{id}")
