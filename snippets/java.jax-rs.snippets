@@ -53,7 +53,7 @@ snippet jaxrs
 			$3 $1;
 
 			try {
-				$1 = np.getById(id);
+				$1 = rs.getById(id);
 			} catch (Exception e) {
 				throw new javax.ws.rs.NotFoundException($3.class.toString() + " for id " + id);
 			}
@@ -79,7 +79,7 @@ snippet jaxrs
 		throws Exception {
 
 			ArrayList<$3> $4;
-			$4 = (ArrayList<$3>) np.getAll();
+			$4 = (ArrayList<$3>) rs.getAll();
 
 			if ($4 == null || $4.isEmpty()) {
 				return Response.noContent().build();
@@ -105,7 +105,7 @@ snippet jaxrs
 		public Response create($3 $1, @Context UriInfo uriInfo)
 		throws Exception {
 
-			$3 no = np.create($1);
+			$3 no = rs.create($1);
 
 			return Response.created(uriInfo.getAbsolutePath()).entity(no).build();
 		}
@@ -129,7 +129,7 @@ snippet jaxrs
 				return Response.notModified().build();
 			}
 
-			$3 pr = np.update($1);
+			$3 pr = rs.update($1);
 
 			return Response.ok().entity(pr).build();
 		}
@@ -145,7 +145,7 @@ snippet jaxrs
 				@ApiResponse(code = 500, message = "Server error and can not delete that $1") })
 		public Response delete(@PathParam("id") Long id)
 		throws Exception {
-			np.delete(id);
+			rs.delete(id);
 			return Response.ok().build();
 		}
 	}
