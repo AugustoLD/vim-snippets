@@ -9,13 +9,11 @@ snippet jaxrs
 	import java.util.ArrayList;
 	import java.util.Date;
 
+	import javax.enterprise.context.RequestScoped;
 	import javax.inject.Inject;
 	import javax.ws.rs.Consumes;
 	import javax.ws.rs.DELETE;
 	import javax.ws.rs.GET;
-	import javax.ws.rs.InternalServerErrorException;
-	import javax.ws.rs.NotAcceptableException;
-	import javax.ws.rs.NotFoundException;
 	import javax.ws.rs.POST;
 	import javax.ws.rs.PUT;
 	import javax.ws.rs.Path;
@@ -26,13 +24,7 @@ snippet jaxrs
 	import javax.ws.rs.core.MediaType;
 	import javax.ws.rs.core.Request;
 	import javax.ws.rs.core.Response;
-	import javax.ws.rs.core.Response.ResponseBuilder;
 	import javax.ws.rs.core.UriInfo;
-
-	import br.org.pti.promotion.context.filters.CacheMaxAge;
-	import br.org.pti.promotion.persons.interfaces.GenericResourcesLocalHome;
-	import br.org.pti.promotion.persons.model.NaturalPerson;
-	import br.org.pti.promotion.persons.model.University;
 
 	import io.swagger.annotations.Api;
 	import io.swagger.annotations.ApiOperation;
@@ -44,71 +36,62 @@ snippet jaxrs
 	public class ${2:ClassName}Controller {
 
 		@Inject
-		private GenericResourcesLocalHome<${3:Model}> rs;
+		private ${3:Model}Bean rs;
 
 		@GET
 		@Path("{id}")
 		@Produces(MediaType.APPLICATION_JSON)
-		@CacheMaxAge
-		@ApiOperation(value = "Find $1 by ID", notes = "Returns a $1", response = $3.class)
+		@ApiOperation(value = "Find a $1 by ID", notes = "Returns a $1 or 404", response = $3.class)
 		@ApiResponses(value = {
 				@ApiResponse(code = 200, message = "OK"),
+				@ApiResponse(code = 204, message = "Record not found - api v2"),
 				@ApiResponse(code = 304, message = "Not modified (cache and e-Tag)"),
-				@ApiResponse(code = 404, message = "Not found") })
-		public Response getById(@PathParam("id") Long id, @Context Request request) {
+				@ApiResponse(code = 404, message = "Record not found"),
+				@ApiResponse(code = 500, message = "Server Error") })
+		public Response getById(@PathParam("id") Long id, @Context Request request)
+		throws Exception {
+			$3 $1;
 
 			try {
-				$3 entity = rs.getById(id);
-
-				EntityTag etag = new EntityTag(Integer.toString(entity.hashCode()));
-				ResponseBuilder builder = request.evaluatePreconditions(etag);
-
-				if (builder != null) {
-					return Response.notModified(etag).build();
-				}
-
-				builder = Response.ok().entity(entity);
-				builder.tag(etag);
-
-				return builder.build();
+				$1 = np.getById(id);
 			} catch (Exception e) {
-				throw new NotFoundException();
+				throw new javax.ws.rs.NotFoundException($3.class.toString() + " for id " + id);
 			}
+
+			EntityTag etag = new EntityTag(Integer.toString($1.hashCode()));
+
+			if (request.evaluatePreconditions(etag) != null) {
+				return Response.notModified().build();
+			}
+
+			return Response.ok().entity($1).tag(etag).build();
 		}
 
 		@GET
 		@Produces(MediaType.APPLICATION_JSON)
-		@CacheMaxAge
-		@ApiOperation(value = "Get all ${4:entities}", notes = "Returns a list of $4", response = $3.class)
+		@ApiOperation(value = "Get all $4", notes = "Returns a list of $1", response = $3.class)
 		@ApiResponses(value = {
 				@ApiResponse(code = 200, message = "OK"),
-				@ApiResponse(code = 204, message = "Any entity"),
+				@ApiResponse(code = 204, message = "Any record found"),
 				@ApiResponse(code = 304, message = "Not modified (cache and e-Tag)"),
-				@ApiResponse(code = 404, message = "Not found") })
-		public Response getAll(@Context Request request) {
+				@ApiResponse(code = 404, message = "Not found with errors") })
+		public Response getAll(@Context Request request)
+		throws Exception {
 
-			try {
-				ArrayList<$3> $4 = (ArrayList<$3>) rs
-					.getAll();
+			ArrayList<$3> $4;
+			$4 = (ArrayList<$3>) np.getAll();
 
-				EntityTag etag = new EntityTag(Integer.toString($4.hashCode()));
-				ResponseBuilder builder = request.evaluatePreconditions(etag);
-
-				if (builder != null) {
-					return Response.notModified(etag).build();
-				}
-
-				if ($4 == null || $4.isEmpty()) {
-					return Response.noContent().build();
-				}
-
-				builder = Response.ok().entity($4);
-				builder.tag(etag);
-
-				return builder.build();
-			} catch (Exception e) {
-				throw new NotFoundException();
+			if ($4 == null || $4.isEmpty()) {
+				return Response.noContent().build();
 			}
+
+			EntityTag etag = new EntityTag(Integer.toString($4.hashCode()));
+
+			if (request.evaluatePreconditions(etag) != null) {
+				return Response.notModified().build();
+			}
+
+			return Response.ok().entity($4).tag(etag).build();
 		}
 
 		@POST
@@ -117,21 +100,14 @@ snippet jaxrs
 		@ApiOperation(value = "Create a $1", notes = "Returns an url for created $1", response = $3.class)
 		@ApiResponses(value = {
 				@ApiResponse(code = 201, message = "Created"),
-				@ApiResponse(code = 406, message = "Something wrong on the server or the request"),
-				@ApiResponse(code = 500, message = "Can't create a $1") })
-		public Response create($3 $1, @Context UriInfo uriInfo) {
+				@ApiResponse(code = 400, message = "Something wrong on the request"),
+				@ApiResponse(code = 500, message = "Server error and can not create a $1") })
+		public Response create($3 $1, @Context UriInfo uriInfo)
+		throws Exception {
 
-			try {
-				$3 entity = rs.create($1);
+			$3 no = np.create($1);
 
-				if (entity == null) {
-					return Response.serverError().build();
-				}
-
-				return Response.created(uriInfo.getAbsolutePath()).entity(entity).build();
-			} catch (Exception e) {
-				throw new NotAcceptableException(e);
-			}
+			return Response.created(uriInfo.getAbsolutePath()).entity(no).build();
 		}
 
 		@PUT
@@ -141,36 +117,21 @@ snippet jaxrs
 		@ApiResponses(value = {
 				@ApiResponse(code = 200, message = "Updated"),
 				@ApiResponse(code = 304, message = "Not modified (cache and e-Tag)"),
-				@ApiResponse(code = 406, message = "Something wrong on the server or the request"),
-				@ApiResponse(code = 500, message = "Can't update that $1") })
-		public Response update($3 $1, @Context Request request) {
+				@ApiResponse(code = 400, message = "Something wrong on the request"),
+				@ApiResponse(code = 500, message = "Server error and can not update that $1") })
+		public Response update($3 $1, @Context Request request)
+		throws Exception {
 
 			java.util.Date timestamp = new Date();
-
 			EntityTag etag = new EntityTag(Integer.toString($1.hashCode()));
 
-			ResponseBuilder builder = request
-				.evaluatePreconditions(timestamp, etag);
-
-			if (builder != null) {
-				return Response.notModified(etag).build();
+			if (request.evaluatePreconditions(timestamp, etag) != null) {
+				return Response.notModified().build();
 			}
 
-			try {
+			$3 pr = np.update($1);
 
-				$3 entity = rs.update($1);
-
-				if (entity == null) {
-					return Response.serverError().build();
-				}
-
-				builder = Response.ok();
-				builder.entity(entity);
-
-				return builder.build();
-			} catch (Exception e) {
-				throw new NotAcceptableException();
-			}
+			return Response.ok().entity(pr).build();
 		}
 
 		@DELETE
@@ -180,15 +141,11 @@ snippet jaxrs
 		@ApiOperation(value = "Delete a $1", notes = "Returns if it works", response = $3.class)
 		@ApiResponses(value = {
 				@ApiResponse(code = 200, message = "Deleted"),
-				@ApiResponse(code = 500, message = "Can't delete that $1") })
-		public Response delete(@PathParam("id") Long id) {
-
-			try {
-				rs.delete(id);
-
-				return Response.ok().build();
-			} catch (Exception e) {
-				throw new InternalServerErrorException();
-			}
+				@ApiResponse(code = 400, message = "Something wrong on the request"),
+				@ApiResponse(code = 500, message = "Server error and can not delete that $1") })
+		public Response delete(@PathParam("id") Long id)
+		throws Exception {
+			np.delete(id);
+			return Response.ok().build();
 		}
-	}
+}
